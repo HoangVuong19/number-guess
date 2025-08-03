@@ -6,6 +6,7 @@ import org.game.numberguess.dto.request.PaymentCompleteRequest;
 import org.game.numberguess.dto.request.PaymentRequest;
 import org.game.numberguess.dto.response.PaymentResponse;
 import org.game.numberguess.entity.User;
+import org.game.numberguess.exception.NotFoundException;
 import org.game.numberguess.repository.IUserRepository;
 import org.game.numberguess.service.IVnPayService;
 import org.springframework.stereotype.Service;
@@ -91,7 +92,7 @@ public class VnPayServiceImpl implements IVnPayService {
     public void updateTurns(PaymentCompleteRequest request, String username) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
+            throw new NotFoundException("User not found");
         }
         User user = userOptional.get();
 

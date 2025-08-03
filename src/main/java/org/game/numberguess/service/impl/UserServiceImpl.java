@@ -9,6 +9,7 @@ import org.game.numberguess.dto.response.LoginResponse;
 import org.game.numberguess.dto.response.UserLeaderboard;
 import org.game.numberguess.dto.response.UserProfileResponse;
 import org.game.numberguess.entity.User;
+import org.game.numberguess.exception.*;
 import org.game.numberguess.repository.IUserRepository;
 import org.game.numberguess.service.IUserService;
 import org.game.numberguess.utils.JwtUtils;
@@ -35,7 +36,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public void usernameExists(String username) {
         if (userRepository.findByUsername(username).isPresent())
-            throw new RuntimeException("Username already exists");
+            throw new ConflictException("Username already exists");
     }
 
     @Override
@@ -54,13 +55,13 @@ public class UserServiceImpl implements IUserService {
     public LoginResponse login(String username, String password) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new RuntimeException("Invalid username or password");
+            throw new UnauthorizedException("Invalid username or password");
         }
 
         User user = userOptional.get();
         PasswordEncoder encoder = new BCryptPasswordEncoder(AuthConstants.BCRYPT_STRENGTH.getValue());
         if (!encoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid username or password");
+            throw new UnauthorizedException("Invalid username or password");
         }
 
         var token = jwtUtils.generateToken(username);
@@ -88,11 +89,11 @@ public class UserServiceImpl implements IUserService {
         ValidateRequest valid = getValidateRequest(username);
 
         if (valid.formattedUpdatedAt != null && !valid.formattedUpdatedAt.equals(request.getUpdatedAt())) {
-            throw new RuntimeException("User data is out of sync. Please refresh.");
+            throw new DataConflictException("User data is out of sync. Please refresh.");
         }
 
         if (valid.user().getTurns() <= 0) {
-            throw new RuntimeException("No turns remaining");
+            throw new BadRequestException("No turns remaining");
         }
 
         Result result = getResult(request);
@@ -120,7 +121,7 @@ public class UserServiceImpl implements IUserService {
     public List<UserLeaderboard> getTop10Users(String username) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
+            throw new NotFoundException("User not found");
         }
         return userRepository.findTop10Leaderboard();
     }
@@ -146,7 +147,7 @@ public class UserServiceImpl implements IUserService {
     private ValidateRequest getValidateRequest(String username) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
+            throw new NotFoundException("User not found");
         }
 
         User user = userOptional.get();

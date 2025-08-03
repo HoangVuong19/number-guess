@@ -1,5 +1,6 @@
 package org.game.numberguess.utils;
 
+import org.game.numberguess.exception.UnauthorizedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,6 @@ public class UserContext {
         if (authentication != null && authentication.isAuthenticated()) {
             return authentication.getName();
         }
-        throw new RuntimeException("User not authenticated");
+        throw new UnauthorizedException("User not authenticated");
     }
 } 
