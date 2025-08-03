@@ -6,6 +6,7 @@ import org.game.numberguess.constants.GameConstants;
 import org.game.numberguess.dto.request.GuessRequest;
 import org.game.numberguess.dto.response.GuessResponse;
 import org.game.numberguess.dto.response.LoginResponse;
+import org.game.numberguess.dto.response.UserLeaderboard;
 import org.game.numberguess.dto.response.UserProfileResponse;
 import org.game.numberguess.entity.User;
 import org.game.numberguess.repository.IUserRepository;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -129,5 +131,14 @@ public class UserServiceImpl implements IUserService {
     }
 
     private record Result(int correctNumber, boolean isCorrect) {
+    }
+
+    @Override
+    public List<UserLeaderboard> getTop10Users(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        return userRepository.findTop10Leaderboard();
     }
 }

@@ -4,11 +4,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.game.numberguess.dto.request.GuessRequest;
 import org.game.numberguess.dto.response.GuessResponse;
+import org.game.numberguess.dto.response.UserLeaderboard;
 import org.game.numberguess.dto.response.UserProfileResponse;
 import org.game.numberguess.service.IUserService;
 import org.game.numberguess.utils.UserContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("")
@@ -30,5 +33,11 @@ public class UserController {
         String username = userContext.getCurrentUsername();
         GuessResponse response = userService.guess(username, request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<UserLeaderboard>> getLeaderboard() {
+        String username = userContext.getCurrentUsername();
+        return ResponseEntity.ok(userService.getTop10Users(username));
     }
 }
