@@ -104,6 +104,9 @@ public class VnPayServiceImpl implements IVnPayService {
             default -> throw new IllegalArgumentException("Invalid payment amount: " + amount);
         };
         user.setTurns(user.getTurns() + turnsToAdd);
+        LocalDateTime updatedAt = LocalDateTime.now();
+        user.setUpdatedAt(updatedAt);
+
         userRepository.save(user);
     }
 

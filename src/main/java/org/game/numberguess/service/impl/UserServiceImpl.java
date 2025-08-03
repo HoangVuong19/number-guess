@@ -17,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -71,48 +73,56 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public UserProfileResponse getUserProfile(String username) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
+        ValidateRequest valid = getValidateRequest(username);
 
-        User user = userOptional.get();
         return UserProfileResponse.builder()
-                .email(user.getUsername())
-                .score(user.getScore())
-                .turns(user.getTurns())
+                .email(valid.user().getUsername())
+                .score(valid.user().getScore())
+                .turns(valid.user().getTurns())
+                .updatedAt(valid.formattedUpdatedAt())
                 .build();
     }
 
     @Override
     public GuessResponse guess(String username, GuessRequest request) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
+        ValidateRequest valid = getValidateRequest(username);
+
+        if (valid.formattedUpdatedAt != null && !valid.formattedUpdatedAt.equals(request.getUpdatedAt())) {
+            throw new RuntimeException("User data is out of sync. Please refresh.");
         }
 
-        User user = userOptional.get();
-
-        if (user.getTurns() <= 0) {
+        if (valid.user().getTurns() <= 0) {
             throw new RuntimeException("No turns remaining");
         }
 
         Result result = getResult(request);
 
-        user.setTurns(user.getTurns() - GameConstants.TURN_DECREMENT.getValue());
+        valid.user().setTurns(valid.user().getTurns() - GameConstants.TURN_DECREMENT.getValue());
         if (result.isCorrect()) {
-            user.setScore(user.getScore() + GameConstants.SCORE_INCREMENT.getValue());
+            valid.user().setScore(valid.user().getScore() + GameConstants.SCORE_INCREMENT.getValue());
         }
+        LocalDateTime updatedAt = LocalDateTime.now();
+        valid.user().setUpdatedAt(updatedAt);
 
-        userRepository.save(user);
+        userRepository.save(valid.user());
 
         return GuessResponse.builder()
                 .message(result.isCorrect() ? "Congratulations! You guessed correctly!" : "Wrong guess! Try again!")
                 .isCorrect(result.isCorrect())
                 .correctNumber(result.correctNumber())
-                .remainingTurns(user.getTurns())
-                .currentScore(user.getScore())
+                .remainingTurns(valid.user().getTurns())
+                .currentScore(valid.user().getScore())
+                .updatedAt(updatedAt.format(valid.formatter))
                 .build();
+    }
+
+    @Override
+    public List<UserLeaderboard> getTop10Users(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        return userRepository.findTop10Leaderboard();
     }
 
     private Result getResult(GuessRequest request) {
@@ -133,12 +143,20 @@ public class UserServiceImpl implements IUserService {
     private record Result(int correctNumber, boolean isCorrect) {
     }
 
-    @Override
-    public List<UserLeaderboard> getTop10Users(String username) {
+    private ValidateRequest getValidateRequest(String username) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
             throw new RuntimeException("User not found");
         }
-        return userRepository.findTop10Leaderboard();
+
+        User user = userOptional.get();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        String formattedUpdatedAt = user.getUpdatedAt() != null
+                ? user.getUpdatedAt().format(formatter)
+                : null;
+        return new ValidateRequest(user, formattedUpdatedAt, formatter);
+    }
+
+    private record ValidateRequest(User user, String formattedUpdatedAt, DateTimeFormatter formatter) {
     }
 }

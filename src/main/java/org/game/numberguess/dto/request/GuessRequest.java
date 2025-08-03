@@ -17,4 +17,6 @@ public class GuessRequest {
     @Min(value = 1, message = "Guess must be at least 1")
     @Max(value = 5, message = "Guess must be at most 5")
     private Integer guess;
+
+    private String updatedAt;
 } 

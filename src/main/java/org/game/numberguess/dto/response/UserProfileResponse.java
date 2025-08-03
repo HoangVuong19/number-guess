@@ -13,4 +13,5 @@ public class UserProfileResponse {
     private String email;
     private Integer score;
     private Integer turns;
+    private String updatedAt;
 } 

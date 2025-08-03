@@ -15,4 +15,5 @@ public class GuessResponse {
     private Integer correctNumber;
     private Integer remainingTurns;
     private Integer currentScore;
+    private String updatedAt;
 } 
